@@ -2,11 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
-// Swagger UI
+// Swagger UI only (docs remain accessible)
 Route::get('/docs', function () {
     return view('swagger');
 });
