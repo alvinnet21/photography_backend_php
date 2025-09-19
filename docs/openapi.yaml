@@ -1,0 +1,262 @@
+openapi: 3.0.3
+info:
+  title: Booking API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8001/api
+paths:
+  /employees:
+    get:
+      summary: List employees
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: 1-based page number
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Create employee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Employee'
+      responses:
+        '201':
+          description: Created
+        '422':
+          description: Validation error
+  /employees/{id}:
+    get:
+      summary: Get employee
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Data not found
+    put:
+      summary: Update employee
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Employee'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Data not found
+    delete:
+      summary: Delete employee
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: No Content
+        '404':
+          description: Data not found
+  /books:
+    get:
+      summary: List books
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: 1-based page number
+        - in: query
+          name: date_from
+          description: Filter start date. Accepts Unix seconds or YYYY-MM-DD. Defaults to first day of current month.
+          schema:
+            oneOf:
+              - type: integer
+              - type: string
+                format: date
+          required: false
+        - in: query
+          name: date_to
+          description: Filter end date. Accepts Unix seconds or YYYY-MM-DD. Defaults to last day of current month.
+          schema:
+            oneOf:
+              - type: integer
+              - type: string
+                format: date
+          required: false
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Create book
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Book'
+      responses:
+        '201':
+          description: Created
+        '409':
+          description: Slot conflict
+        '422':
+          description: Validation error
+  /books/{id}:
+    get:
+      summary: Get book
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Data not found
+    put:
+      summary: Update book status
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookStatusUpdate'
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Data not found
+        '409':
+          description: Invalid status transition
+        '422':
+          description: Validation error
+    delete:
+      summary: Delete book
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: No Content
+        '404':
+          description: Data not found
+  /books/availability:
+    get:
+      summary: Check availability range
+      parameters:
+        - in: query
+          name: employee_id
+          required: true
+          schema:
+            type: integer
+      description: Returns availability for the next 180 days starting today.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: integer
+                          description: Unix timestamp at start of day
+                        available_slots:
+                          type: array
+                          items:
+                            type: string
+                            enum: [MORNING, AFTERNOON, FULL_DAY]
+components:
+  schemas:
+    Employee:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        position:
+          type: string
+          enum: [PHOTOGRAPHER, VIDEOGRAPHER]
+        created_at:
+          type: integer
+          description: Unix timestamp
+          readOnly: true
+        updated_at:
+          type: integer
+          description: Unix timestamp
+          readOnly: true
+        deleted_at:
+          type: integer
+          description: Unix timestamp, null if not deleted
+          nullable: true
+          readOnly: true
+      required: [name, email, phone, position]
+    Book:
+      type: object
+      properties:
+        employee_id:
+          type: integer
+        date:
+          type: integer
+          description: Unix timestamp at start of day
+        time_slot:
+          type: string
+          enum: [MORNING, AFTERNOON, FULL_DAY]
+        status:
+          type: string
+          enum: [PENDING, ACCEPTED, REJECTED, FINISHED]
+        customer_name:
+          type: string
+        customer_email:
+          type: string
+          format: email
+        customer_phone:
+          type: string
+      required: [employee_id, date, time_slot]
+    BookStatusUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ACCEPTED, REJECTED, FINISHED]
+      required: [status]
